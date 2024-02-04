@@ -2,6 +2,17 @@
 
 
 
+## v0.2.0 (2024-02-04)
+
+### Documentation
+
+* docs(readme): Add pipeline status badge ([`5eb2c23`](https://github.com/abelazo/spotify-tools/commit/5eb2c23bad27f7ae6aed9b486654f5c59d68e1b3))
+
+### Feature
+
+* feat(importer): Raise exception if OAuth variables are not set ([`9e2ffbf`](https://github.com/abelazo/spotify-tools/commit/9e2ffbf1f267e3febdabc2fb0cf57d1043485f42))
+
+
 ## v0.1.0 (2024-02-04)
 
 ### Feature
