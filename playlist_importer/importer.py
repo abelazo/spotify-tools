@@ -1,35 +1,26 @@
 import csv
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
+import logging
 import os
 import requests
+import urllib.parse
 import uvicorn
 
-
-class Playlist:
-    def __init__(self, name, songs):
-        self.name = name
-        self.songs = songs
-
-    def __str__(self):
-        print(f"{self.name} = [{str(self.songs)}]")
+from .domain import Playlist, Song
 
 
-class Song:
-    def __init__(self, title, album, artist):
-        self.title = title
-        self.album = album
-        self.artist = artist
-
-    def __str__(self):
-        print(f"{self.title},{self.album},{self.artist}")
-
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 client_id = os.environ["SPOTIFY_CLIENT_ID"]
 client_secret = os.environ["SPOTIFY_CLIENT_SECRET"]
 redirect_uri = os.environ["SPOTIFY_REDIRECT_URI"]
+playlists_folder = os.environ["PLAYLISTS_FOLDER"]
+project_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+working_folder = f"{project_root_dir}/{playlists_folder}"
 
-playlist = None
+playlist: Playlist
 
 app = FastAPI()
 
@@ -50,24 +41,21 @@ def get_access_token(auth_code: str):
 
 @app.get("/")
 async def auth():
-    print(client_id)
-    print(client_secret)
-    print(redirect_uri)
-
-    playlist_name = "Beatles"
-    with open(f"{playlist_name}.csv") as csv_file:
+    playlist_name = "Bateria"
+    with open(f"{working_folder}/{playlist_name}.csv") as csv_file:
+        global playlist
         playlist = Playlist(name=playlist_name, songs=[])
         csv_reader = csv.reader(csv_file, delimiter=",")
         line_count = 0
         for row in csv_reader:
             if line_count == 0:
-                print(f'Column names are {", ".join(row)}')
+                logging.info(f'Column names are {", ".join(row)}')
             else:
                 song = Song(title=row[0], album=row[1], artist=row[2])
                 playlist.songs.append(song)
             line_count += 1
 
-    print(f"Playlist {str(playlist)} processed.")
+    logging.info(f"Playlist read: {playlist}")
 
     scope = ["playlist-modify-private", "playlist-modify-public"]
     auth_url = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={' '.join(scope)}"
@@ -77,11 +65,11 @@ async def auth():
 @app.get("/callback")
 async def callback(code):
     headers = get_access_token(code)
-    response = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    user_id = response.json()["id"]
+    # response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+    # user_id = response.json()["id"]
 
-    name = "Test playlist"
-    description = "Test playlist"
+    name = playlist.name
+    description = f"Test playlist for {playlist.name}"
 
     params = {
         "name": name,
@@ -90,28 +78,34 @@ async def callback(code):
     }
 
     # Create playlist
-    url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
-    response = requests.post(url=url, headers=headers, json=params)
-    playlist_id = response.json()["id"]
+    # url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+    # response = requests.post(url=url, headers=headers, json=params)
+    # playlist_id = response.json()["id"]
 
     # For list of songs
+    for working_song in playlist.songs:
+        # 1. Search for a song
+        query = f"track:{working_folder.title()} artist:{working_song.artist}"
+        params = {"q": urllib.parse.quote(query), "type": "track"}
+        url = f"https://api.spotify.com/v1/search?{urllib.parse.urlencode(params)}"
+        response = requests.get(url, headers=headers)
+        # logger.info(response.json()["tracks"]["items"][0]["uri"])
+        logger.info(response.json()["tracks"]["items"][0]["external_urls"]["spotify"])
 
-    # 1. Search for a song
-    # https://api.spotify.com/v1/search?q=track%3AXXXXXX%2520artist%3AYYYYY%2520YYYYYY&type=track
-    # f"spotify:track:{tracks.items[0].id}"
+        # # 2. Add song to playlist
+        # # track_uri = "spotify:track:319eU2WvplIHzjvogpnNc6"
+        # response = requests.post(
+        #     f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
+        #     headers=headers,
+        #     json={"uris": [track_uri]},
+        # )
+        # if response.status_code == 201:
+        #    logger.info({"Track added succesfully")
+        # else:
+        #    logger.info({f"Error: {response.json()}")
 
-    # 2. Add song to playlist
-    track_uri = "spotify:track:319eU2WvplIHzjvogpnNc6"
-    response = requests.post(
-        f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
-        headers=headers,
-        json={"uris": [track_uri]},
-    )
-    if response.status_code == 201:
-        return {"message": "Track added successfully!"}
-    else:
-        return {"error": response.json()}
+    return {"message": "Playlist added successfully!"}
 
 
 def start():
-    uvicorn.run(app)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
