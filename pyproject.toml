@@ -1,0 +1,56 @@
+[tool.poetry]
+name = "spotify-tools"
+version = "0.0.1"
+description = "Spotify tools"
+authors = ["Abel Guillen <abelazo@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "playlist_importer" }]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.ruff]
+line-length = 120
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.109.1"
+uvicorn = "^0.27.0.post1"
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.3.0"
+pre-commit = "^3.2.1"
+pytest = "^7"
+pytest-cov = "^4.1.0"
+ruff = "^0.0.263"
+
+[tool.poetry.group.release.dependencies]
+python-semantic-release = "^8.0.7"
+
+[tool.poetry.scripts]
+importer = "playlist_importer.importer:start"
+
+[tool.pytest.ini_options]
+addopts = """
+    --strict-markers
+    --cov playlist_importer
+    --cov-report term
+"""
+testpaths = ["test"]
+markers = [
+    "ut: marks unit tests",
+]
+
+[tool.semantic_release]
+version_toml = [
+    "pyproject.toml:tool.poetry.version",
+]
+branch = "main"
+build_command = "pip install poetry && poetry install && poetry build"
+commit_subject = "chore(release): v{version} [skip ci]"
+commit_author = "Github Actions agent <agent@github.com>"
+upload_to_vcs_release = false
