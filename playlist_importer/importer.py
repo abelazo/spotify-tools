@@ -9,7 +9,6 @@ import uvicorn
 
 from .domain import Playlist, Song
 
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -59,14 +58,14 @@ async def auth():
 
     scope = ["playlist-modify-private", "playlist-modify-public"]
     auth_url = f"https://accounts.spotify.com/authorize?response_type=code&client_id={client_id}&redirect_uri={redirect_uri}&scope={' '.join(scope)}"
-    return HTMLResponse(content=f'<a href="{auth_url}">Authorize</a>')
+    return HTMLResponse(content=f'<a href="{auth_url}">Import</a>')
 
 
 @app.get("/callback")
 async def callback(code):
     headers = get_access_token(code)
-    # response = requests.get("https://api.spotify.com/v1/me", headers=headers)
-    # user_id = response.json()["id"]
+    response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+    user_id = response.json()["id"]
 
     name = playlist.name
     description = f"Test playlist for {playlist.name}"
@@ -78,31 +77,36 @@ async def callback(code):
     }
 
     # Create playlist
-    # url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
-    # response = requests.post(url=url, headers=headers, json=params)
-    # playlist_id = response.json()["id"]
+    url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
+    response = requests.post(url=url, headers=headers, json=params)
+    playlist_id = response.json()["id"]
 
-    # For list of songs
+    # Add all songs in the file
     for working_song in playlist.songs:
         # 1. Search for a song
-        query = f"track:{working_folder.title()} artist:{working_song.artist}"
+        query = f"track:{working_song.title} artist:{working_song.artist} album:{working_song.album}"
         params = {"q": urllib.parse.quote(query), "type": "track"}
+        logger.debug(f"Search parameters: {urllib.parse.urlencode(params)}")
         url = f"https://api.spotify.com/v1/search?{urllib.parse.urlencode(params)}"
         response = requests.get(url, headers=headers)
-        # logger.info(response.json()["tracks"]["items"][0]["uri"])
-        logger.info(response.json()["tracks"]["items"][0]["external_urls"]["spotify"])
 
-        # # 2. Add song to playlist
-        # # track_uri = "spotify:track:319eU2WvplIHzjvogpnNc6"
-        # response = requests.post(
-        #     f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
-        #     headers=headers,
-        #     json={"uris": [track_uri]},
-        # )
-        # if response.status_code == 201:
-        #    logger.info({"Track added succesfully")
-        # else:
-        #    logger.info({f"Error: {response.json()}")
+        # 2. Add song to playlist
+        try:
+            spotify_url = response.json()["tracks"]["items"][0]["external_urls"]["spotify"]
+            logger.info(f"Adding track {working_song}: {spotify_url}")
+
+            result_album = response.json()["tracks"]["items"][0]["album"]["name"]
+            if result_album != working_song.album:
+                logger.warning(f"Album '{result_album}' does not match with expected album '{working_song.album}'")
+
+            track_uri = response.json()["tracks"]["items"][0]["uri"]
+            response = requests.post(
+                f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
+                headers=headers,
+                json={"uris": [track_uri]},
+            )
+        except KeyError:
+            logger.error(f"Search results were empty. Could not add song {working_song} to the playlist")
 
     return {"message": "Playlist added successfully!"}
 
