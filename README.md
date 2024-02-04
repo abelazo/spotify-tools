@@ -1,4 +1,10 @@
 # Spotify tools
+
+| Configuration                                                                                                                                                                                                   | Status                                                                                                                                  |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------|
+| [![Semantic Release](https://github.com/abelazo/spotify-tools/actions/workflows/semantic-release.yaml/badge.svg?branch=main)](https://github.com/abelazo/spotify-tools/actions/workflows/semantic-release.yaml) | [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit) |
+| [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)                                                    | [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)                                    |
+
 Tools to interact with Spotify API
 
 ## Getting started
@@ -12,6 +18,7 @@ Tools to interact with Spotify API
 #### Prepare local environment
 
 Install pre-commits for this repo and python dependencies:
+
 ```shell
 just setup
 ```
@@ -19,6 +26,7 @@ just setup
 ## Usage
 
 Run the API using Just:
+
 ```shell
 just run
 ```
@@ -35,6 +43,7 @@ just testall # Runs all tests
 ```
 
 You can also use pytest directly:
+
 ```shell
 poetry run pytest                        # Runs all tests
 poetry run pytest -m "marks expression"  # Runs tests with a specific mark
