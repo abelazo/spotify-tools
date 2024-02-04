@@ -2,6 +2,15 @@
 
 
 
+## v0.3.0 (2024-02-04)
+
+### Feature
+
+* feat(importer): Create playlist with the content of the CVS file ([`897fb37`](https://github.com/abelazo/spotify-tools/commit/897fb37aa5b3e7d80e9d5e8571d0b34b29b8db57))
+
+* feat(importer): Search for inputs songs using Spotify API ([`7ee86b7`](https://github.com/abelazo/spotify-tools/commit/7ee86b798ff1b2151b917eb66231b22bcc81d9e9))
+
+
 ## v0.2.0 (2024-02-04)
 
 ### Documentation
