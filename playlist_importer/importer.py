@@ -40,7 +40,7 @@ def get_access_token(auth_code: str):
 
 @app.get("/")
 async def auth():
-    playlist_name = "Bateria"
+    playlist_name = "TW_Basf"
     with open(f"{working_folder}/{playlist_name}.csv") as csv_file:
         global playlist
         playlist = Playlist(name=playlist_name, songs=[])
@@ -61,6 +61,14 @@ async def auth():
     return HTMLResponse(content=f'<a href="{auth_url}">Import</a>')
 
 
+#     for filename in os.listdir(working_folder):
+#         f = os.path.join(working_folder, filename)
+#         # checking if it is a file
+#         if os.path.isfile(f):
+#             logging.info(f"Playlist read: {f}")
+#     return HTMLResponse(content=f'Done')
+
+
 @app.get("/callback")
 async def callback(code):
     headers = get_access_token(code)
@@ -68,7 +76,7 @@ async def callback(code):
     user_id = response.json()["id"]
 
     name = playlist.name
-    description = f"Test playlist for {playlist.name}"
+    description = f"{playlist.name}"
 
     params = {
         "name": name,
@@ -85,7 +93,7 @@ async def callback(code):
     for working_song in playlist.songs:
         # 1. Search for a song
         query = f"track:{working_song.title} artist:{working_song.artist} album:{working_song.album}"
-        params = {"q": urllib.parse.quote(query), "type": "track"}
+        params = {"q": urllib.parse.quote_plus(query), "type": "track"}
         logger.debug(f"Search parameters: {urllib.parse.urlencode(params)}")
         url = f"https://api.spotify.com/v1/search?{urllib.parse.urlencode(params)}"
         response = requests.get(url, headers=headers)
