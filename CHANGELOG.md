@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.4.0 (2025-01-19)
+
+### Chores
+
+- **poetry**: Update dependencies
+  ([`d6fd520`](https://github.com/abelazo/spotify-tools/commit/d6fd5202bfe2a8528c1b8e26ad548dc49de9234c))
+
+### Features
+
+- **importer**: Add retries
+  ([`b4f1af9`](https://github.com/abelazo/spotify-tools/commit/b4f1af9e9a2d3966880fa4127971d32778f3cf15))
+
+
 ## v0.3.1 (2025-01-19)
 
 ### Bug Fixes
