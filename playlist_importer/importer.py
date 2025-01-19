@@ -6,6 +6,7 @@ import os
 import requests
 import urllib.parse
 import uvicorn
+import time
 
 from .domain import Playlist, Song
 
@@ -69,10 +70,32 @@ async def auth():
 #     return HTMLResponse(content=f'Done')
 
 
+def post_with_retry(url, headers, params):
+    response = requests.post(url=url, headers=headers, params=params)
+
+    if response.status_code == 429:
+        retry_after = int(response.headers["Retry-After"])
+        logger.warning(f"Rate limit exceeded for POST. Retrying after {retry_after} seconds.")
+        time.sleep(retry_after)
+
+    return post_with_retry(url, headers, params)
+
+
+def get_with_retry(url, headers):
+    response = requests.get(url=url, headers=headers)
+
+    if response.status_code == 429:
+        retry_after = int(response.headers["Retry-After"])
+        logger.warning(f"Rate limit exceeded for GET. Retrying after {retry_after} seconds.")
+        time.sleep(retry_after)
+
+    return get_with_retry(url, headers)
+
+
 @app.get("/callback")
 async def callback(code):
     headers = get_access_token(code)
-    response = requests.get("https://api.spotify.com/v1/me", headers=headers)
+    response = get_with_retry("https://api.spotify.com/v1/me", headers=headers)
     user_id = response.json()["id"]
 
     name = playlist.name
@@ -86,7 +109,7 @@ async def callback(code):
 
     # Create playlist
     url = f"https://api.spotify.com/v1/users/{user_id}/playlists"
-    response = requests.post(url=url, headers=headers, json=params)
+    response = post_with_retry(url=url, headers=headers, params=params)
     playlist_id = response.json()["id"]
 
     # Add all songs in the file
@@ -96,7 +119,7 @@ async def callback(code):
         params = {"q": urllib.parse.quote_plus(query), "type": "track"}
         logger.debug(f"Search parameters: {urllib.parse.urlencode(params)}")
         url = f"https://api.spotify.com/v1/search?{urllib.parse.urlencode(params)}"
-        response = requests.get(url, headers=headers)
+        response = get_with_retry(url, headers=headers)
 
         # 2. Add song to playlist
         try:
@@ -108,10 +131,10 @@ async def callback(code):
                 logger.warning(f"Album '{result_album}' does not match with expected album '{working_song.album}'")
 
             track_uri = response.json()["tracks"]["items"][0]["uri"]
-            response = requests.post(
-                f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
+            response = post_with_retry(
+                url=f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
                 headers=headers,
-                json={"uris": [track_uri]},
+                params={"uris": [track_uri]},
             )
         except KeyError:
             logger.error(f"Search results were empty. Could not add song {working_song} to the playlist")
